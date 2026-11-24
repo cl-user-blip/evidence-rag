@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+<title id="title">Evidence RAG retrieval and source citation preview</title><desc id="desc">Actual small-fixture test metrics, RRF citation example, and abstention limitation.</desc>
+<rect width="1200" height="720" rx="16" fill="#f5f6f2"/>
+<rect x="0" y="0" width="1200" height="173" rx="16" fill="#143a40"/><rect x="0" y="145" width="1200" height="28" fill="#143a40"/>
+<g font-family="Segoe UI,Arial,Microsoft YaHei,sans-serif" fill="#17333d">
+<text x="54" y="44" fill="#80d5c6" font-size="12" font-weight="700" letter-spacing="3">SPARSE RETRIEVAL / SOURCE EVIDENCE / EVALUATION</text>
+<text x="54" y="103" fill="#ffffff" font-size="47" font-weight="750">Evidence RAG</text>
+<text x="54" y="143" fill="#c6dedd" font-size="18">可追溯检索 · 原文抽取基线 · 逐题检查失败</text>
+<text x="795" y="102" fill="#ffffff" font-size="17">12 docs / 25 chunks</text>
+<text x="795" y="136" fill="#c6dedd" font-size="15">12 dev / 21 test queries</text>
+<text x="55" y="213" font-size="13" fill="#65808a" font-weight="650">01  /  DOCUMENT-LEVEL TEST RETRIEVAL</text>
+<text x="75" y="248" font-size="12" fill="#65808a">METHOD</text><text x="430" y="248" font-size="12" fill="#65808a">RECALL@3</text><text x="650" y="248" font-size="12" fill="#65808a">MRR@3</text><text x="870" y="248" font-size="12" fill="#65808a">NDCG@3</text>
+<rect x="54" y="261" width="1092" height="52" rx="7" fill="#f3f6f4"/><text x="75" y="290" font-size="18" font-weight="650">BM25</text><text x="430" y="290" font-size="21" font-weight="600">0.933</text><text x="650" y="290" font-size="21" font-weight="600">0.967</text><text x="870" y="290" font-size="21" font-weight="600">0.924</text><rect x="54" y="323" width="1092" height="52" rx="7" fill="#f3f6f4"/><text x="75" y="352" font-size="18" font-weight="650">TFIDF</text><text x="430" y="352" font-size="21" font-weight="600">0.933</text><text x="650" y="352" font-size="21" font-weight="600">0.933</text><text x="870" y="352" font-size="21" font-weight="600">0.899</text><rect x="54" y="385" width="1092" height="52" rx="7" fill="#e7f3ee"/><text x="75" y="414" font-size="18" font-weight="650">RRF</text><text x="430" y="414" font-size="21" font-weight="600">0.933</text><text x="650" y="414" font-size="21" font-weight="600">0.967</text><text x="870" y="414" font-size="21" font-weight="600">0.924</text>
+<rect x="54" y="459" width="665" height="151" rx="9" fill="#ffffff" stroke="#d2e0da"/>
+<text x="76" y="490" fill="#087e80" font-size="12" font-weight="700">02 / INSPECTABLE EVIDENCE</text>
+<text x="76" y="524" font-size="17" font-weight="600">01-retrieval.md:L6-L9</text>
+<text x="76" y="557" font-size="15">Reciprocal Rank Fusion: sum 1 / (60 + rank)</text>
+<text x="76" y="586" fill="#65808a" font-size="13">来源、行号、分路分数、原文片段均可在 HTML 展开。</text>
+<rect x="739" y="459" width="407" height="151" rx="9" fill="#fff0da"/>
+<text x="761" y="490" fill="#a96824" font-size="12" font-weight="700">03 / KNOWN LIMITATION</text>
+<text x="761" y="536" fill="#a96824" font-size="34" font-weight="750">50%</text>
+<text x="859" y="533" fill="#80572c" font-size="14">未知问题误接收率</text>
+<text x="761" y="573" fill="#80572c" font-size="14">相关片段 ≠ 问题已有答案</text>
+<text x="54" y="657" fill="#65808a" font-size="14">原创小型语料；结果不代表生产效果。RRF 本次与 BM25 持平；拒答仍需改进。</text>
+<text x="54" y="687" fill="#65808a" font-size="12">RUN: python -m evidence_rag evaluate --output outputs    /    OPEN: outputs/report.html</text>
+</g></svg>

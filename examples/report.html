@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Evidence RAG — Evaluation Report</title>
+<style>
+:root{--ink:#172b38;--muted:#5e737e;--paper:#f5f6f2;--teal:#087e80;--line:#d7e0dc;--orange:#c57934}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1180px;margin:auto;padding:48px 26px 70px}header{border-top:5px solid var(--teal);padding-top:25px;position:relative}.eyebrow{font-size:11px;letter-spacing:2px;color:var(--teal);font-weight:750}h1{font-size:clamp(35px,6vw,66px);letter-spacing:-2px;line-height:1.1;margin:12px 0 16px}h1 em{font-style:normal;color:var(--teal)}.intro{max-width:760px;color:var(--muted);font-size:17px}.tags{display:flex;gap:10px;flex-wrap:wrap;margin:25px 0 32px}.tags span{border:1px solid var(--line);padding:5px 13px;border-radius:5px;background:white}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.metric-card{background:#fff;border:1px solid var(--line);padding:24px;border-radius:9px}h2{font-size:24px;margin:4px 0 20px}.bar-row{display:grid;grid-template-columns:80px 1fr 42px;gap:8px;align-items:center;font-size:12px;margin:13px 0}.track{height:7px;background:#e7eeee;border-radius:9px;overflow:hidden}.track i{display:block;height:100%;background:var(--teal)}.notice{margin:25px 0;padding:16px 22px;border-left:3px solid var(--orange);background:#fff6e9;color:#805827}section{margin-top:42px}.table-wrap{overflow:auto;background:#fff;border:1px solid var(--line);border-radius:8px}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:15px;text-align:left;border-bottom:1px solid var(--line)}thead th{color:var(--muted);font-size:11px;letter-spacing:.3px;white-space:nowrap}.muted{color:var(--muted);font-size:13px}details{margin:12px 0;border:1px solid var(--line);border-radius:7px;background:#fff}summary{cursor:pointer;padding:18px;list-style-position:inside;font-weight:600}.pill{display:inline-block;margin-right:12px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}.good{background:#e3f3e9;color:#26734e}.bad{background:#fff0db;color:#9e6224}.detail-body{padding:0 22px 22px}.passage{margin:18px 0 0;background:#f5f8f7;border-radius:5px;padding:16px}code{color:var(--teal);font-size:12px}.score{float:right;font-size:11px;color:var(--muted)}pre{white-space:pre-wrap;font:13px/1.8 system-ui,sans-serif;margin:10px 0 0}footer{margin-top:45px;border-top:1px solid var(--line);padding-top:20px;font-size:12px;color:var(--muted)}@media(max-width:800px){.grid{grid-template-columns:1fr}main{padding:28px 16px}.score{float:none;display:block}}
+</style></head><body><main>
+<header><span class="eyebrow">ALGORITHM × EVIDENCE × EVALUATION</span><h1>Retrieval you can <em>inspect.</em></h1><p class="intro">BM25 + 字符 TF-IDF + RRF。逐行保留证据，用独立 query test 集检查排序与拒答，直接展开失败案例。</p><div class="tags"><span>12 原创文档</span><span>25 可追溯切块</span><span>12 dev / 21 test</span><span>无需 API Key · 全离线</span></div></header>
+<div class="grid"><article class="metric-card"><span class="eyebrow">SPARSE RETRIEVAL</span><h2>BM25</h2><div class="bar-row"><span>recall@3</span><div class="track"><i style="width:93.3%"></i></div><strong>0.933</strong></div><div class="bar-row"><span>mrr@3</span><div class="track"><i style="width:96.7%"></i></div><strong>0.967</strong></div><div class="bar-row"><span>ndcg@3</span><div class="track"><i style="width:92.4%"></i></div><strong>0.924</strong></div></article><article class="metric-card"><span class="eyebrow">SPARSE RETRIEVAL</span><h2>TFIDF</h2><div class="bar-row"><span>recall@3</span><div class="track"><i style="width:93.3%"></i></div><strong>0.933</strong></div><div class="bar-row"><span>mrr@3</span><div class="track"><i style="width:93.3%"></i></div><strong>0.933</strong></div><div class="bar-row"><span>ndcg@3</span><div class="track"><i style="width:89.9%"></i></div><strong>0.899</strong></div></article><article class="metric-card"><span class="eyebrow">SPARSE RETRIEVAL</span><h2>RRF</h2><div class="bar-row"><span>recall@3</span><div class="track"><i style="width:93.3%"></i></div><strong>0.933</strong></div><div class="bar-row"><span>mrr@3</span><div class="track"><i style="width:96.7%"></i></div><strong>0.967</strong></div><div class="bar-row"><span>ndcg@3</span><div class="track"><i style="width:92.4%"></i></div><strong>0.924</strong></div></article></div>
+<div class="notice">实验边界：这是一套手工编写的小型双语工程资料和问题，dev/test 查询互不相同，但同属一个演示语料。结果用于验证实现与分析失败，不代表公开大规模基准或生产效果。回答是原文抽取，未调用大模型。</div>
+<section><h2>01 / 同一语料，三种排序</h2><div class="table-wrap"><table><thead><tr><th>METHOD</th><th>RECALL@3</th><th>MRR@3</th><th>NDCG@3</th><th>拒答 BAL. ACC.</th><th>未知问题误接收率</th><th>DEV 阈值</th></tr></thead><tbody><tr><th>BM25</th><td>0.933</td><td>0.967</td><td>0.924</td><td>0.667</td><td>0.667</td><td>0.0393</td></tr><tr><th>TFIDF</th><td>0.933</td><td>0.933</td><td>0.899</td><td>0.550</td><td>0.500</td><td>0.1680</td></tr><tr><th>RRF</th><td>0.933</td><td>0.967</td><td>0.924</td><td>0.550</td><td>0.500</td><td>0.1680</td></tr></tbody></table></div><p class="muted">排序指标只在 15 个有答案测试问题上平均；按不同源文档去重。拒答使用全部 21 个测试问题。阈值按 dev balanced accuracy、F1 和更高阈值的顺序选择，test 未参与选择。</p></section>
+<section><h2>02 / 展开 RRF 测试与证据</h2><p class="muted">绿色表示接受/拒答决策符合可回答性标签，不能据此认为完整回答正确。橙色显示误拒或误接收。检索出的片段即使带引用，也可能没有回答问题。</p><details><summary><span class="pill good">有答案 / 返回原文</span>How does reciprocal rank fusion combine retrieval rankings?</summary><div class="detail-body"><p>测试标签：01-retrieval.md<br>confidence=0.2489，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>01-retrieval.md:L6-L9</code><span class="score">BM25 8.60 · cosine 0.249</span><pre>Reciprocal Rank Fusion (RRF) 按各路名次累加 1 / (60 + rank)，避免直接相加 BM25 与 cosine 的异尺度分数。这里的 60 是固定实验参数，不是最优值结论。
+每路只融合前 50 个正分候选。离线评测对重复来源去重，Recall@3 的 3 指三个不同文档，不是三个相邻切块。
+
+## Failure modes</pre></div><div class="passage"><code>01-retrieval.md:L1-L6</code><span class="score">BM25 7.51 · cosine 0.216</span><pre># 混合检索 / Hybrid retrieval
+
+本资料是原创演示语料中的工程约定，不代表真实公司的内部制度。
+BM25 采用词项频率、逆文档频率和长度归一化；它适合错误码、版本号等精确匹配。英文词项与中文二元字串用于无分词器的词法基线。
+Character TF-IDF 对字符二至四元组建立向量，L2 归一化后的点积即 cosine similarity。它有助于部分拼写与中文短语匹配，但不能理解同义词的语义。
+Reciprocal Rank Fusion (RRF) 按各路名次累加 1 / (60 + rank)，避免直接相加 BM25 与 cosine 的异尺度分数。这里的 60 是固定实验参数，不是最优值结论。</pre></div><div class="passage"><code>09-temporal-split.md:L8-L9</code><span class="score">BM25 3.39 · cosine 0.132</span><pre>## Relation to retrieval
+Retrieval&#x27;s dev/test split is a query split, not a temporal split. Different tasks require different leakage checks.</pre></div></div></details><details><summary><span class="pill bad">有答案 / 拒答</span>相同文档里的多个切块命中，recall 能重复算吗？</summary><div class="detail-body"><p>测试标签：01-retrieval.md、11-ranking-metrics.md<br>confidence=0.1653，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>11-ranking-metrics.md:L1-L8</code><span class="score">BM25 16.25 · cosine 0.165</span><pre># 检索指标 / Ranking metrics
+
+Recall@k 衡量前 k 个不同文档覆盖了多少相关文档。多个 chunk 命中同一来源不能重复计算 recall。
+MRR@k 只看第一个相关文档的倒数排名，没有命中时为零。它不刻画后续多个相关结果的覆盖。
+nDCG@k 按排名折扣累积相关性，再除以理想排序的分数。本项目使用二值相关标签，没有声称做 graded relevance 标注。
+无答案问题不参与 Recall、MRR 与 nDCG 的平均，单独参与拒答评测；把它们当成 recall 为一会虚增指标。
+
+## Example</pre></div><div class="passage"><code>01-retrieval.md:L6-L9</code><span class="score">BM25 12.15 · cosine 0.137</span><pre>Reciprocal Rank Fusion (RRF) 按各路名次累加 1 / (60 + rank)，避免直接相加 BM25 与 cosine 的异尺度分数。这里的 60 是固定实验参数，不是最优值结论。
+每路只融合前 50 个正分候选。离线评测对重复来源去重，Recall@3 的 3 指三个不同文档，不是三个相邻切块。
+
+## Failure modes</pre></div><div class="passage"><code>12-indexing.md:L1-L8</code><span class="score">BM25 6.08 · cosine 0.027</span><pre># Markdown 切块 / Ingestion and chunking
+
+输入只读取指定语料目录内的 Markdown 文件，不自动发送到第三方 API。路径按相对根目录记录，外部符号链接不加入语料。
+切块按字符预算与原始行边界推进，默认 320 字符，重叠一个行片段。超长单行会切成多个片段，但都保留原始行号。
+chunk 太小会丢上下文，太大会稀释检索信号并增加生成时上下文成本。重叠会增加索引体积以及重复候选，应在排序评测时按文档去重。
+UTF-8 BOM 与空文件需要正常处理。chunk ID 与语料摘要用于追踪内容变化，而不是用随机 UUID 掩盖版本变化。
+
+## Implementation scale</pre></div></div></details><details><summary><span class="pill bad">有答案 / 拒答</span>文档里没有答案时，为什么字符相似度不代表事实支持？</summary><div class="detail-body"><p>测试标签：03-abstention.md、02-citations.md<br>confidence=0.0691，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>03-abstention.md:L1-L6</code><span class="score">BM25 12.18 · cosine 0.069</span><pre># 证据不足与拒答 / Abstention
+
+离线系统用最高排名片段的字符 cosine 作为证据相似度启发值。这不是概率，也不是事实蕴含检测。
+只在 dev 集上选择拒答阈值，目标先最大化 balanced accuracy，再以 F1 打破平局。test 集只报告结果，不能反过来用于调阈值。
+未知问题包括完全无关的问题，也包括主题相关但资料没有覆盖的细节。后者更难：提及 Redis 的片段不能回答 Redis 所在机房。
+拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。</pre></div><div class="passage"><code>01-retrieval.md:L1-L6</code><span class="score">BM25 6.51 · cosine 0.037</span><pre># 混合检索 / Hybrid retrieval
+
+本资料是原创演示语料中的工程约定，不代表真实公司的内部制度。
+BM25 采用词项频率、逆文档频率和长度归一化；它适合错误码、版本号等精确匹配。英文词项与中文二元字串用于无分词器的词法基线。
+Character TF-IDF 对字符二至四元组建立向量，L2 归一化后的点积即 cosine similarity。它有助于部分拼写与中文短语匹配，但不能理解同义词的语义。
+Reciprocal Rank Fusion (RRF) 按各路名次累加 1 / (60 + rank)，避免直接相加 BM25 与 cosine 的异尺度分数。这里的 60 是固定实验参数，不是最优值结论。</pre></div><div class="passage"><code>07-prompt-injection.md:L1-L8</code><span class="score">BM25 3.79 · cosine 0.028</span><pre># 提示注入 / Prompt injection
+
+检索文档和工具返回值属于不可信数据。文档里出现“忽略系统规则”不能获得执行工具或导出密钥的权限。
+Prompt injection 不能只靠在 prompt 中写一句警告解决。工具层要实施允许列表、参数校验和最小权限，规划模型不能绕开这些边界。
+网页文本中嵌入的工具调用样式只是数据。对外发送内容需要单独授权，工具结果不能替用户授权。
+评测应包含直接越权请求、间接文档注入和正常任务，分别记录拒绝率与正常任务完成率，防止通过全部拒绝获得虚假的安全成绩。
+
+## Scope</pre></div></div></details><details><summary><span class="pill good">有答案 / 返回原文</span>checkpoint schema version 升级无法识别时怎么办？</summary><div class="detail-body"><p>测试标签：04-checkpoint.md<br>confidence=0.3679，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>04-checkpoint.md:L6-L9</code><span class="score">BM25 18.67 · cosine 0.368</span><pre>状态升级要有 schema version 和迁移函数；无法识别的新版本应明确失败，不能静默丢弃字段。
+
+## Storage boundary
+此演示资料不规定 checkpoint 数据库产品、版本、机房、云厂商或连接密码。持久化方案应根据并发与一致性要求选择。</pre></div><div class="passage"><code>04-checkpoint.md:L1-L6</code><span class="score">BM25 14.44 · cosine 0.301</span><pre># Agent 断点 / Checkpoints
+
+演示工作流在每个已完成工具步骤后保存状态快照，字段包括 run_id、step、输入摘要、工具结果和状态版本。
+恢复时只推进未完成步骤。工具具有外部副作用时，必须使用幂等键或核对执行记录；仅靠恢复快照不能保证 exactly-once。
+Checkpoint replay means resuming a workflow from persisted state. It is different from replaying every API request blindly.
+状态升级要有 schema version 和迁移函数；无法识别的新版本应明确失败，不能静默丢弃字段。</pre></div><div class="passage"><code>02-citations.md:L8-L9</code><span class="score">BM25 0.00 · cosine 0.102</span><pre>## Versioning
+Record corpus and query SHA256 digests in every report. Changes to the corpus invalidate old line references. Keep source revision and report together when discussing an experiment.</pre></div></div></details><details><summary><span class="pill bad">有答案 / 拒答</span>对有副作用的请求重试时，幂等键是否需要换一个？</summary><div class="detail-body"><p>测试标签：05-retry.md、04-checkpoint.md<br>confidence=0.1354，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>05-retry.md:L1-L8</code><span class="score">BM25 19.43 · cosine 0.135</span><pre># 重试与幂等 / Retry and idempotency
+
+临时错误使用有上限的指数退避，并增加 jitter 避免并发客户端同时重试。确定性参数错误不应无条件重试。
+HTTP 429 可以在请求预算允许时依据服务端 Retry-After 等信息安排重试；具体服务行为仍需查询对应接口文档。
+对扣款或发邮件等有副作用的操作使用 idempotency key。幂等键绑定逻辑操作，同一步重试复用该键，不能每次新建随机键。
+重试次数与总时长都应计入预算。日志记录 attempt、error category、delay 和最终状态，便于区分工具故障与规划错误。
+
+## Boundary</pre></div><div class="passage"><code>04-checkpoint.md:L1-L6</code><span class="score">BM25 8.25 · cosine 0.051</span><pre># Agent 断点 / Checkpoints
+
+演示工作流在每个已完成工具步骤后保存状态快照，字段包括 run_id、step、输入摘要、工具结果和状态版本。
+恢复时只推进未完成步骤。工具具有外部副作用时，必须使用幂等键或核对执行记录；仅靠恢复快照不能保证 exactly-once。
+Checkpoint replay means resuming a workflow from persisted state. It is different from replaying every API request blindly.
+状态升级要有 schema version 和迁移函数；无法识别的新版本应明确失败，不能静默丢弃字段。</pre></div><div class="passage"><code>07-prompt-injection.md:L1-L8</code><span class="score">BM25 2.52 · cosine 0.011</span><pre># 提示注入 / Prompt injection
+
+检索文档和工具返回值属于不可信数据。文档里出现“忽略系统规则”不能获得执行工具或导出密钥的权限。
+Prompt injection 不能只靠在 prompt 中写一句警告解决。工具层要实施允许列表、参数校验和最小权限，规划模型不能绕开这些边界。
+网页文本中嵌入的工具调用样式只是数据。对外发送内容需要单独授权，工具结果不能替用户授权。
+评测应包含直接越权请求、间接文档注入和正常任务，分别记录拒绝率与正常任务完成率，防止通过全部拒绝获得虚假的安全成绩。
+
+## Scope</pre></div></div></details><details><summary><span class="pill bad">有答案 / 拒答</span>如何避免所有客户端在重试时同时发请求？</summary><div class="detail-body"><p>测试标签：05-retry.md<br>confidence=0.1130，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>05-retry.md:L1-L8</code><span class="score">BM25 14.04 · cosine 0.113</span><pre># 重试与幂等 / Retry and idempotency
+
+临时错误使用有上限的指数退避，并增加 jitter 避免并发客户端同时重试。确定性参数错误不应无条件重试。
+HTTP 429 可以在请求预算允许时依据服务端 Retry-After 等信息安排重试；具体服务行为仍需查询对应接口文档。
+对扣款或发邮件等有副作用的操作使用 idempotency key。幂等键绑定逻辑操作，同一步重试复用该键，不能每次新建随机键。
+重试次数与总时长都应计入预算。日志记录 attempt、error category、delay 和最终状态，便于区分工具故障与规划错误。
+
+## Boundary</pre></div><div class="passage"><code>06-budget.md:L1-L8</code><span class="score">BM25 2.77 · cosine 0.018</span><pre># Agent 预算 / Execution budget
+
+一个运行同时限制最大步骤数、总墙钟时间和工具调用数。每次调用前检查剩余额度，避免规划循环无界增长。
+硬预算耗尽时终止为 budget_exceeded，保留已完成步骤的记录，返回可解释的停止原因。不能偷偷扩大预算继续执行。
+Token usage 与费用需要由实际接口返回值或明确费率计算。离线演示不应把字符数假装成真实 token 消耗。
+预算限制不等价于安全策略：即使预算充足，越权文件读取和未经授权的外部写入仍然应被拒绝。
+
+## Observability</pre></div><div class="passage"><code>07-prompt-injection.md:L1-L8</code><span class="score">BM25 1.70 · cosine 0.012</span><pre># 提示注入 / Prompt injection
+
+检索文档和工具返回值属于不可信数据。文档里出现“忽略系统规则”不能获得执行工具或导出密钥的权限。
+Prompt injection 不能只靠在 prompt 中写一句警告解决。工具层要实施允许列表、参数校验和最小权限，规划模型不能绕开这些边界。
+网页文本中嵌入的工具调用样式只是数据。对外发送内容需要单独授权，工具结果不能替用户授权。
+评测应包含直接越权请求、间接文档注入和正常任务，分别记录拒绝率与正常任务完成率，防止通过全部拒绝获得虚假的安全成绩。
+
+## Scope</pre></div></div></details><details><summary><span class="pill bad">有答案 / 拒答</span>运行次数限制和越权文件读取之间有什么关系？</summary><div class="detail-body"><p>测试标签：06-budget.md、07-prompt-injection.md<br>confidence=0.1397，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>06-budget.md:L1-L8</code><span class="score">BM25 15.25 · cosine 0.140</span><pre># Agent 预算 / Execution budget
+
+一个运行同时限制最大步骤数、总墙钟时间和工具调用数。每次调用前检查剩余额度，避免规划循环无界增长。
+硬预算耗尽时终止为 budget_exceeded，保留已完成步骤的记录，返回可解释的停止原因。不能偷偷扩大预算继续执行。
+Token usage 与费用需要由实际接口返回值或明确费率计算。离线演示不应把字符数假装成真实 token 消耗。
+预算限制不等价于安全策略：即使预算充足，越权文件读取和未经授权的外部写入仍然应被拒绝。
+
+## Observability</pre></div><div class="passage"><code>12-indexing.md:L1-L8</code><span class="score">BM25 3.99 · cosine 0.017</span><pre># Markdown 切块 / Ingestion and chunking
+
+输入只读取指定语料目录内的 Markdown 文件，不自动发送到第三方 API。路径按相对根目录记录，外部符号链接不加入语料。
+切块按字符预算与原始行边界推进，默认 320 字符，重叠一个行片段。超长单行会切成多个片段，但都保留原始行号。
+chunk 太小会丢上下文，太大会稀释检索信号并增加生成时上下文成本。重叠会增加索引体积以及重复候选，应在排序评测时按文档去重。
+UTF-8 BOM 与空文件需要正常处理。chunk ID 与语料摘要用于追踪内容变化，而不是用随机 UUID 掩盖版本变化。
+
+## Implementation scale</pre></div><div class="passage"><code>02-citations.md:L1-L8</code><span class="score">BM25 3.08 · cosine 0.015</span><pre># 引用溯源 / Source citations
+
+检索切块保留相对文件名、起止行号和内容摘要生成的稳定 chunk ID。引用形式为 filename.md:L2-L7，必须能回到原文。
+文件名与行号相同但内容发生修改时，chunk ID 也会改变。移动文件会改变 ID；这个取舍优先保证可复现性，不保证跨重构的永久标识。
+抽取式回答直接展示原文片段和引用，不用语言模型改写。引用存在仅能证明片段来自该文件，不能证明它回答了用户问题。
+如果接入生成模型，应额外检查引用 ID 是否在检索候选内，并评估每个事实的证据支持；仅做引用格式校验不足以防止幻觉。
+
+## Versioning</pre></div></div></details><details><summary><span class="pill good">有答案 / 返回原文</span>间接 prompt injection 除了 prompt 警告，还应该怎么防范？</summary><div class="detail-body"><p>测试标签：07-prompt-injection.md<br>confidence=0.3383，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>07-prompt-injection.md:L1-L8</code><span class="score">BM25 10.02 · cosine 0.338</span><pre># 提示注入 / Prompt injection
+
+检索文档和工具返回值属于不可信数据。文档里出现“忽略系统规则”不能获得执行工具或导出密钥的权限。
+Prompt injection 不能只靠在 prompt 中写一句警告解决。工具层要实施允许列表、参数校验和最小权限，规划模型不能绕开这些边界。
+网页文本中嵌入的工具调用样式只是数据。对外发送内容需要单独授权，工具结果不能替用户授权。
+评测应包含直接越权请求、间接文档注入和正常任务，分别记录拒绝率与正常任务完成率，防止通过全部拒绝获得虚假的安全成绩。
+
+## Scope</pre></div><div class="passage"><code>07-prompt-injection.md:L8-L9</code><span class="score">BM25 7.49 · cosine 0.308</span><pre>## Scope
+This note describes an engineering boundary, not a claim that the portfolio code is immune to all prompt injection attacks.</pre></div><div class="passage"><code>03-abstention.md:L6-L10</code><span class="score">BM25 0.00 · cosine 0.053</span><pre>拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。
+上线前需要人工标注真实问题，补充同主题无答案样本，再检验阈值迁移。小型手写语料的高分不是生产质量保证。
+
+## Product wording
+When evidence is weak, say that the corpus does not contain sufficient support. Do not turn the model&#x27;s confidence or retrieval score into a guarantee.</pre></div></div></details><details><summary><span class="pill good">有答案 / 返回原文</span>How should cache keys account for permissions and changed corpus content?</summary><div class="detail-body"><p>测试标签：08-cache.md<br>confidence=0.2787，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>02-citations.md:L8-L9</code><span class="score">BM25 4.47 · cosine 0.279</span><pre>## Versioning
+Record corpus and query SHA256 digests in every report. Changes to the corpus invalidate old line references. Keep source revision and report together when discussing an experiment.</pre></div><div class="passage"><code>08-cache.md:L8-L9</code><span class="score">BM25 3.66 · cosine 0.233</span><pre>## Tradeoff
+Immutable content-addressed cache entries make invalidation explicit but require a retention policy. An experiment report should state whether timings include indexing.</pre></div><div class="passage"><code>03-abstention.md:L6-L10</code><span class="score">BM25 2.31 · cosine 0.127</span><pre>拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。
+上线前需要人工标注真实问题，补充同主题无答案样本，再检验阈值迁移。小型手写语料的高分不是生产质量保证。
+
+## Product wording
+When evidence is weak, say that the corpus does not contain sufficient support. Do not turn the model&#x27;s confidence or retrieval score into a guarantee.</pre></div></div></details><details><summary><span class="pill bad">有答案 / 拒答</span>用未来天气观测做时序特征有什么问题？</summary><div class="detail-body"><p>测试标签：09-temporal-split.md<br>confidence=0.1296，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>09-temporal-split.md:L1-L8</code><span class="score">BM25 16.69 · cosine 0.130</span><pre># 时序数据划分 / Temporal split
+
+时序预测按时间先后划分训练、验证和测试，不使用随机打乱后的切分。用未来信息拟合标准化器会造成数据泄漏。
+多步预测的标签窗口可能跨越边界，必须按 forecast horizon 清除跨区间样本。仅仅让输入窗口按时间排序还不够。
+模型与超参数只用训练和验证集选择，最终 test 留到方案确定后评估。逐时回测必须明确可用历史数据和更新时间。
+特征工程也要遵守信息可用性：未来观测到的天气属于未来信息，已发布的天气预报则需要记录发布时间。
+
+## Relation to retrieval</pre></div><div class="passage"><code>03-abstention.md:L6-L10</code><span class="score">BM25 2.90 · cosine 0.017</span><pre>拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。
+上线前需要人工标注真实问题，补充同主题无答案样本，再检验阈值迁移。小型手写语料的高分不是生产质量保证。
+
+## Product wording
+When evidence is weak, say that the corpus does not contain sufficient support. Do not turn the model&#x27;s confidence or retrieval score into a guarantee.</pre></div><div class="passage"><code>03-abstention.md:L1-L6</code><span class="score">BM25 2.82 · cosine 0.018</span><pre># 证据不足与拒答 / Abstention
+
+离线系统用最高排名片段的字符 cosine 作为证据相似度启发值。这不是概率，也不是事实蕴含检测。
+只在 dev 集上选择拒答阈值，目标先最大化 balanced accuracy，再以 F1 打破平局。test 集只报告结果，不能反过来用于调阈值。
+未知问题包括完全无关的问题，也包括主题相关但资料没有覆盖的细节。后者更难：提及 Redis 的片段不能回答 Redis 所在机房。
+拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。</pre></div></div></details><details><summary><span class="pill good">有答案 / 返回原文</span>Split conformal 在有分布漂移的时间序列中能保证名义覆盖率吗？</summary><div class="detail-body"><p>测试标签：10-conformal.md<br>confidence=0.3262，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>10-conformal.md:L1-L8</code><span class="score">BM25 30.40 · cosine 0.326</span><pre># 不确定性 / Conformal intervals
+
+校准区间使用独立 calibration 集的残差分位数，不在最终 test 上选区间宽度。有限样本分位数应处理上取整与样本过少情况。
+Split conformal 的常见覆盖结论需要可交换性等条件。时间序列存在自相关与分布漂移，不能直接把名义覆盖率当作覆盖保证。
+同时报告 empirical coverage 和 mean interval width，并按预测 horizon 划分；只给平均覆盖率会掩盖远期失效。
+区间再宽也不能证明均值预测准确。点预测误差、区间覆盖率与业务成本分别报告。
+
+## Boundary</pre></div><div class="passage"><code>09-temporal-split.md:L8-L9</code><span class="score">BM25 3.88 · cosine 0.103</span><pre>## Relation to retrieval
+Retrieval&#x27;s dev/test split is a query split, not a temporal split. Different tasks require different leakage checks.</pre></div><div class="passage"><code>09-temporal-split.md:L1-L8</code><span class="score">BM25 4.60 · cosine 0.053</span><pre># 时序数据划分 / Temporal split
+
+时序预测按时间先后划分训练、验证和测试，不使用随机打乱后的切分。用未来信息拟合标准化器会造成数据泄漏。
+多步预测的标签窗口可能跨越边界，必须按 forecast horizon 清除跨区间样本。仅仅让输入窗口按时间排序还不够。
+模型与超参数只用训练和验证集选择，最终 test 留到方案确定后评估。逐时回测必须明确可用历史数据和更新时间。
+特征工程也要遵守信息可用性：未来观测到的天气属于未来信息，已发布的天气预报则需要记录发布时间。
+
+## Relation to retrieval</pre></div></div></details><details><summary><span class="pill good">有答案 / 返回原文</span>第一个相关结果排第二，MRR@3 和 nDCG@3 是多少？</summary><div class="detail-body"><p>测试标签：11-ranking-metrics.md<br>confidence=0.2042，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>11-ranking-metrics.md:L8-L9</code><span class="score">BM25 10.28 · cosine 0.204</span><pre>## Example
+If the only relevant document is ranked second, Recall@3 is 1, MRR@3 is 0.5 and nDCG@3 is 1/log2(3). Duplicate chunks from one file are deduplicated before evaluation.</pre></div><div class="passage"><code>11-ranking-metrics.md:L1-L8</code><span class="score">BM25 19.11 · cosine 0.184</span><pre># 检索指标 / Ranking metrics
+
+Recall@k 衡量前 k 个不同文档覆盖了多少相关文档。多个 chunk 命中同一来源不能重复计算 recall。
+MRR@k 只看第一个相关文档的倒数排名，没有命中时为零。它不刻画后续多个相关结果的覆盖。
+nDCG@k 按排名折扣累积相关性，再除以理想排序的分数。本项目使用二值相关标签，没有声称做 graded relevance 标注。
+无答案问题不参与 Recall、MRR 与 nDCG 的平均，单独参与拒答评测；把它们当成 recall 为一会虚增指标。
+
+## Example</pre></div><div class="passage"><code>01-retrieval.md:L6-L9</code><span class="score">BM25 6.07 · cosine 0.052</span><pre>Reciprocal Rank Fusion (RRF) 按各路名次累加 1 / (60 + rank)，避免直接相加 BM25 与 cosine 的异尺度分数。这里的 60 是固定实验参数，不是最优值结论。
+每路只融合前 50 个正分候选。离线评测对重复来源去重，Recall@3 的 3 指三个不同文档，不是三个相邻切块。
+
+## Failure modes</pre></div></div></details><details><summary><span class="pill good">有答案 / 返回原文</span>超长单行 markdown 如何切块和引用行号？</summary><div class="detail-body"><p>测试标签：12-indexing.md<br>confidence=0.2521，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>12-indexing.md:L1-L8</code><span class="score">BM25 13.21 · cosine 0.252</span><pre># Markdown 切块 / Ingestion and chunking
+
+输入只读取指定语料目录内的 Markdown 文件，不自动发送到第三方 API。路径按相对根目录记录，外部符号链接不加入语料。
+切块按字符预算与原始行边界推进，默认 320 字符，重叠一个行片段。超长单行会切成多个片段，但都保留原始行号。
+chunk 太小会丢上下文，太大会稀释检索信号并增加生成时上下文成本。重叠会增加索引体积以及重复候选，应在排序评测时按文档去重。
+UTF-8 BOM 与空文件需要正常处理。chunk ID 与语料摘要用于追踪内容变化，而不是用随机 UUID 掩盖版本变化。
+
+## Implementation scale</pre></div><div class="passage"><code>02-citations.md:L1-L8</code><span class="score">BM25 10.91 · cosine 0.045</span><pre># 引用溯源 / Source citations
+
+检索切块保留相对文件名、起止行号和内容摘要生成的稳定 chunk ID。引用形式为 filename.md:L2-L7，必须能回到原文。
+文件名与行号相同但内容发生修改时，chunk ID 也会改变。移动文件会改变 ID；这个取舍优先保证可复现性，不保证跨重构的永久标识。
+抽取式回答直接展示原文片段和引用，不用语言模型改写。引用存在仅能证明片段来自该文件，不能证明它回答了用户问题。
+如果接入生成模型，应额外检查引用 ID 是否在检索候选内，并评估每个事实的证据支持；仅做引用格式校验不足以防止幻觉。
+
+## Versioning</pre></div><div class="passage"><code>01-retrieval.md:L6-L9</code><span class="score">BM25 1.90 · cosine 0.009</span><pre>Reciprocal Rank Fusion (RRF) 按各路名次累加 1 / (60 + rank)，避免直接相加 BM25 与 cosine 的异尺度分数。这里的 60 是固定实验参数，不是最优值结论。
+每路只融合前 50 个正分候选。离线评测对重复来源去重，Recall@3 的 3 指三个不同文档，不是三个相邻切块。
+
+## Failure modes</pre></div></div></details><details><summary><span class="pill good">有答案 / 返回原文</span>Why are existing source citations insufficient to prove factual support?</summary><div class="detail-body"><p>测试标签：02-citations.md<br>confidence=0.1683，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>02-citations.md:L8-L9</code><span class="score">BM25 3.61 · cosine 0.168</span><pre>## Versioning
+Record corpus and query SHA256 digests in every report. Changes to the corpus invalidate old line references. Keep source revision and report together when discussing an experiment.</pre></div><div class="passage"><code>02-citations.md:L1-L8</code><span class="score">BM25 3.70 · cosine 0.109</span><pre># 引用溯源 / Source citations
+
+检索切块保留相对文件名、起止行号和内容摘要生成的稳定 chunk ID。引用形式为 filename.md:L2-L7，必须能回到原文。
+文件名与行号相同但内容发生修改时，chunk ID 也会改变。移动文件会改变 ID；这个取舍优先保证可复现性，不保证跨重构的永久标识。
+抽取式回答直接展示原文片段和引用，不用语言模型改写。引用存在仅能证明片段来自该文件，不能证明它回答了用户问题。
+如果接入生成模型，应额外检查引用 ID 是否在检索候选内，并评估每个事实的证据支持；仅做引用格式校验不足以防止幻觉。
+
+## Versioning</pre></div><div class="passage"><code>03-abstention.md:L6-L10</code><span class="score">BM25 0.00 · cosine 0.211</span><pre>拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。
+上线前需要人工标注真实问题，补充同主题无答案样本，再检验阈值迁移。小型手写语料的高分不是生产质量保证。
+
+## Product wording
+When evidence is weak, say that the corpus does not contain sufficient support. Do not turn the model&#x27;s confidence or retrieval score into a guarantee.</pre></div></div></details><details><summary><span class="pill good">有答案 / 返回原文</span>只在 dev 上选拒答阈值，test 应该做什么？</summary><div class="detail-body"><p>测试标签：03-abstention.md<br>confidence=0.1833，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>03-abstention.md:L1-L6</code><span class="score">BM25 14.25 · cosine 0.183</span><pre># 证据不足与拒答 / Abstention
+
+离线系统用最高排名片段的字符 cosine 作为证据相似度启发值。这不是概率，也不是事实蕴含检测。
+只在 dev 集上选择拒答阈值，目标先最大化 balanced accuracy，再以 F1 打破平局。test 集只报告结果，不能反过来用于调阈值。
+未知问题包括完全无关的问题，也包括主题相关但资料没有覆盖的细节。后者更难：提及 Redis 的片段不能回答 Redis 所在机房。
+拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。</pre></div><div class="passage"><code>09-temporal-split.md:L8-L9</code><span class="score">BM25 6.46 · cosine 0.088</span><pre>## Relation to retrieval
+Retrieval&#x27;s dev/test split is a query split, not a temporal split. Different tasks require different leakage checks.</pre></div><div class="passage"><code>08-cache.md:L1-L8</code><span class="score">BM25 4.98 · cosine 0.037</span><pre># 缓存一致性 / Cache invalidation
+
+检索索引缓存键至少包含语料摘要、切块配置、分词规则与向量化配置。只按目录名缓存会返回过期结果。
+答案缓存还要绑定 query、检索方法、top_k 和拒答阈值；若存在用户权限，必须把权限域加入缓存键，避免跨租户泄露。
+缓存命中率不等于正确率。报告需要区分冷启动建索引耗时与热索引查询延迟。
+Redis 在这里只是可选缓存示例，资料没有提供实际 Redis 地址、密码、部署机房或实例规格。
+
+## Tradeoff</pre></div></div></details><details><summary><span class="pill good">无答案 / 拒答</span>明天上海最高气温是多少摄氏度？</summary><div class="detail-body"><p>测试标签：∅（资料没有覆盖问题所求）<br>confidence=0.0272，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>11-ranking-metrics.md:L1-L8</code><span class="score">BM25 2.37 · cosine 0.027</span><pre># 检索指标 / Ranking metrics
+
+Recall@k 衡量前 k 个不同文档覆盖了多少相关文档。多个 chunk 命中同一来源不能重复计算 recall。
+MRR@k 只看第一个相关文档的倒数排名，没有命中时为零。它不刻画后续多个相关结果的覆盖。
+nDCG@k 按排名折扣累积相关性，再除以理想排序的分数。本项目使用二值相关标签，没有声称做 graded relevance 标注。
+无答案问题不参与 Recall、MRR 与 nDCG 的平均，单独参与拒答评测；把它们当成 recall 为一会虚增指标。
+
+## Example</pre></div><div class="passage"><code>03-abstention.md:L1-L6</code><span class="score">BM25 2.22 · cosine 0.026</span><pre># 证据不足与拒答 / Abstention
+
+离线系统用最高排名片段的字符 cosine 作为证据相似度启发值。这不是概率，也不是事实蕴含检测。
+只在 dev 集上选择拒答阈值，目标先最大化 balanced accuracy，再以 F1 打破平局。test 集只报告结果，不能反过来用于调阈值。
+未知问题包括完全无关的问题，也包括主题相关但资料没有覆盖的细节。后者更难：提及 Redis 的片段不能回答 Redis 所在机房。
+拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。</pre></div></div></details><details><summary><span class="pill good">无答案 / 拒答</span>Who won the lunar chess championship in 1987?</summary><div class="detail-body"><p>测试标签：∅（资料没有覆盖问题所求）<br>confidence=0.1561，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>02-citations.md:L8-L9</code><span class="score">BM25 0.00 · cosine 0.156</span><pre>## Versioning
+Record corpus and query SHA256 digests in every report. Changes to the corpus invalidate old line references. Keep source revision and report together when discussing an experiment.</pre></div><div class="passage"><code>06-budget.md:L8-L9</code><span class="score">BM25 0.00 · cosine 0.128</span><pre>## Observability
+Trace events should distinguish planning, tool execution, retries, budget checks and finalization. Aggregate latency hides which stage exhausted the budget.</pre></div><div class="passage"><code>03-abstention.md:L6-L10</code><span class="score">BM25 0.00 · cosine 0.112</span><pre>拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。
+上线前需要人工标注真实问题，补充同主题无答案样本，再检验阈值迁移。小型手写语料的高分不是生产质量保证。
+
+## Product wording
+When evidence is weak, say that the corpus does not contain sufficient support. Do not turn the model&#x27;s confidence or retrieval score into a guarantee.</pre></div></div></details><details><summary><span class="pill bad">无答案 / 返回原文</span>Redis 实例部署在哪个机房？</summary><div class="detail-body"><p>测试标签：∅（资料没有覆盖问题所求）<br>confidence=0.1755，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>08-cache.md:L1-L8</code><span class="score">BM25 8.76 · cosine 0.176</span><pre># 缓存一致性 / Cache invalidation
+
+检索索引缓存键至少包含语料摘要、切块配置、分词规则与向量化配置。只按目录名缓存会返回过期结果。
+答案缓存还要绑定 query、检索方法、top_k 和拒答阈值；若存在用户权限，必须把权限域加入缓存键，避免跨租户泄露。
+缓存命中率不等于正确率。报告需要区分冷启动建索引耗时与热索引查询延迟。
+Redis 在这里只是可选缓存示例，资料没有提供实际 Redis 地址、密码、部署机房或实例规格。
+
+## Tradeoff</pre></div><div class="passage"><code>03-abstention.md:L1-L6</code><span class="score">BM25 4.34 · cosine 0.140</span><pre># 证据不足与拒答 / Abstention
+
+离线系统用最高排名片段的字符 cosine 作为证据相似度启发值。这不是概率，也不是事实蕴含检测。
+只在 dev 集上选择拒答阈值，目标先最大化 balanced accuracy，再以 F1 打破平局。test 集只报告结果，不能反过来用于调阈值。
+未知问题包括完全无关的问题，也包括主题相关但资料没有覆盖的细节。后者更难：提及 Redis 的片段不能回答 Redis 所在机房。
+拒答要与检索分开评测：有答案问题计算 Recall、MRR、nDCG；全部测试问题计算拒答混淆矩阵及 unknown false accept rate。</pre></div><div class="passage"><code>10-conformal.md:L8-L9</code><span class="score">BM25 3.18 · cosine 0.023</span><pre>## Boundary
+本语料没有记录某电站的真实覆盖率、业务节省金额或线上部署效果。此类数据不得由演示结果推断。</pre></div></div></details><details><summary><span class="pill bad">无答案 / 返回原文</span>checkpoint 数据库密码是什么？</summary><div class="detail-body"><p>测试标签：∅（资料没有覆盖问题所求）<br>confidence=0.2948，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>04-checkpoint.md:L6-L9</code><span class="score">BM25 10.58 · cosine 0.295</span><pre>状态升级要有 schema version 和迁移函数；无法识别的新版本应明确失败，不能静默丢弃字段。
+
+## Storage boundary
+此演示资料不规定 checkpoint 数据库产品、版本、机房、云厂商或连接密码。持久化方案应根据并发与一致性要求选择。</pre></div><div class="passage"><code>04-checkpoint.md:L1-L6</code><span class="score">BM25 2.06 · cosine 0.188</span><pre># Agent 断点 / Checkpoints
+
+演示工作流在每个已完成工具步骤后保存状态快照，字段包括 run_id、step、输入摘要、工具结果和状态版本。
+恢复时只推进未完成步骤。工具具有外部副作用时，必须使用幂等键或核对执行记录；仅靠恢复快照不能保证 exactly-once。
+Checkpoint replay means resuming a workflow from persisted state. It is different from replaying every API request blindly.
+状态升级要有 schema version 和迁移函数；无法识别的新版本应明确失败，不能静默丢弃字段。</pre></div><div class="passage"><code>09-temporal-split.md:L1-L8</code><span class="score">BM25 2.43 · cosine 0.015</span><pre># 时序数据划分 / Temporal split
+
+时序预测按时间先后划分训练、验证和测试，不使用随机打乱后的切分。用未来信息拟合标准化器会造成数据泄漏。
+多步预测的标签窗口可能跨越边界，必须按 forecast horizon 清除跨区间样本。仅仅让输入窗口按时间排序还不够。
+模型与超参数只用训练和验证集选择，最终 test 留到方案确定后评估。逐时回测必须明确可用历史数据和更新时间。
+特征工程也要遵守信息可用性：未来观测到的天气属于未来信息，已发布的天气预报则需要记录发布时间。
+
+## Relation to retrieval</pre></div></div></details><details><summary><span class="pill bad">无答案 / 返回原文</span>真实电站线上部署节省了多少业务金额？</summary><div class="detail-body"><p>测试标签：∅（资料没有覆盖问题所求）<br>confidence=0.2365，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>10-conformal.md:L8-L9</code><span class="score">BM25 28.07 · cosine 0.237</span><pre>## Boundary
+本语料没有记录某电站的真实覆盖率、业务节省金额或线上部署效果。此类数据不得由演示结果推断。</pre></div><div class="passage"><code>11-ranking-metrics.md:L1-L8</code><span class="score">BM25 4.73 · cosine 0.032</span><pre># 检索指标 / Ranking metrics
+
+Recall@k 衡量前 k 个不同文档覆盖了多少相关文档。多个 chunk 命中同一来源不能重复计算 recall。
+MRR@k 只看第一个相关文档的倒数排名，没有命中时为零。它不刻画后续多个相关结果的覆盖。
+nDCG@k 按排名折扣累积相关性，再除以理想排序的分数。本项目使用二值相关标签，没有声称做 graded relevance 标注。
+无答案问题不参与 Recall、MRR 与 nDCG 的平均，单独参与拒答评测；把它们当成 recall 为一会虚增指标。
+
+## Example</pre></div><div class="passage"><code>08-cache.md:L1-L8</code><span class="score">BM25 1.91 · cosine 0.009</span><pre># 缓存一致性 / Cache invalidation
+
+检索索引缓存键至少包含语料摘要、切块配置、分词规则与向量化配置。只按目录名缓存会返回过期结果。
+答案缓存还要绑定 query、检索方法、top_k 和拒答阈值；若存在用户权限，必须把权限域加入缓存键，避免跨租户泄露。
+缓存命中率不等于正确率。报告需要区分冷启动建索引耗时与热索引查询延迟。
+Redis 在这里只是可选缓存示例，资料没有提供实际 Redis 地址、密码、部署机房或实例规格。
+
+## Tradeoff</pre></div></div></details><details><summary><span class="pill good">无答案 / 拒答</span>HTTP 429 接口的厂商价格是每百万请求多少钱？</summary><div class="detail-body"><p>测试标签：∅（资料没有覆盖问题所求）<br>confidence=0.1637，dev 选择的阈值=0.1680；confidence 是相似度启发值。</p><div class="passage"><code>05-retry.md:L1-L8</code><span class="score">BM25 7.94 · cosine 0.164</span><pre># 重试与幂等 / Retry and idempotency
+
+临时错误使用有上限的指数退避，并增加 jitter 避免并发客户端同时重试。确定性参数错误不应无条件重试。
+HTTP 429 可以在请求预算允许时依据服务端 Retry-After 等信息安排重试；具体服务行为仍需查询对应接口文档。
+对扣款或发邮件等有副作用的操作使用 idempotency key。幂等键绑定逻辑操作，同一步重试复用该键，不能每次新建随机键。
+重试次数与总时长都应计入预算。日志记录 attempt、error category、delay 和最终状态，便于区分工具故障与规划错误。
+
+## Boundary</pre></div><div class="passage"><code>12-indexing.md:L8-L9</code><span class="score">BM25 3.66 · cosine 0.013</span><pre>## Implementation scale
+本演示索引在内存中构建；BM25 使用逐 chunk 扫描，适合小语料实验。百万文档需要倒排索引、持久化和访问控制，不应直接扩大本实现规模。</pre></div><div class="passage"><code>04-checkpoint.md:L6-L9</code><span class="score">BM25 3.25 · cosine 0.012</span><pre>状态升级要有 schema version 和迁移函数；无法识别的新版本应明确失败，不能静默丢弃字段。
+
+## Storage boundary
+此演示资料不规定 checkpoint 数据库产品、版本、机房、云厂商或连接密码。持久化方案应根据并发与一致性要求选择。</pre></div></div></details></section>
+<section><h2>03 / 可复现记录</h2><p class="muted">Python 3.14.6 · NumPy 2.4.6 · scikit-learn 1.9.0</p><p class="muted">Corpus SHA256: <code>8ee901822ab360fdec423a69c7040ce70341bdd1b19ca4ad6f6dea2229182758</code><br>Queries SHA256: <code>61e23fd8c7ff5994d57117db8e16294c83f3fb8fbb58400e6a21dff9895bfdd3</code></p><p>复现：<code>python -m evidence_rag evaluate --output outputs</code>。完整逐题排序、分数与混淆矩阵见同目录 <code>metrics.json</code>。</p></section>
+<footer>EVIDENCE RAG / Original portfolio experiment · 2026-11-24T13:04:52.796255+00:00 · No external resources loaded.</footer>
+</main></body></html>
