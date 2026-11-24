@@ -5,11 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "evidence-rag"
 version = "0.1.0"
-description = "Inspectable bilingual sparse retrieval, evidence citations, and honest offline evaluation"
+description = "Bilingual sparse retrieval, source citations, and reproducible offline evaluation"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["numpy>=1.26,<3", "scikit-learn>=1.4,<2"]
 license = "MIT"
-authors = [{name = "Portfolio contributors"}]
+authors = [{name = "cl-user-blip"}]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10"]

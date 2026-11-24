@@ -36,10 +36,10 @@ def write_report(result: dict, output: Path) -> None:
 </style></head><body><main>
 <header><span class="eyebrow">ALGORITHM × EVIDENCE × EVALUATION</span><h1>Retrieval you can <em>inspect.</em></h1><p class="intro">BM25 + 字符 TF-IDF + RRF。逐行保留证据，用独立 query test 集检查排序与拒答，直接展开失败案例。</p><div class="tags"><span>{counts["documents"]} 原创文档</span><span>{counts["chunks"]} 可追溯切块</span><span>{counts["dev"]} dev / {counts["test"]} test</span><span>无需 API Key · 全离线</span></div></header>
 <div class="grid">{"".join(cards)}</div>
-<div class="notice">实验边界：这是一套手工编写的小型双语工程资料和问题，dev/test 查询互不相同，但同属一个演示语料。结果用于验证实现与分析失败，不代表公开大规模基准或生产效果。回答是原文抽取，未调用大模型。</div>
+<div class="notice">实验边界：这是一套自建的小型双语工程资料和问题，dev/test 查询互不相同，但同属一个回归语料。结果用于验证实现与分析失败，不代表公开大规模基准或生产效果。回答采用原文抽取。</div>
 <section><h2>01 / 同一语料，三种排序</h2><div class="table-wrap"><table><thead><tr><th>METHOD</th><th>RECALL@{k}</th><th>MRR@{k}</th><th>NDCG@{k}</th><th>拒答 BAL. ACC.</th><th>未知问题误接收率</th><th>DEV 阈值</th></tr></thead><tbody>{"".join(rows)}</tbody></table></div><p class="muted">排序指标只在 {counts["test_answerable"]} 个有答案测试问题上平均；按不同源文档去重。拒答使用全部 {counts["test"]} 个测试问题。阈值按 dev balanced accuracy、F1 和更高阈值的顺序选择，test 未参与选择。</p></section>
 <section><h2>02 / 展开 RRF 测试与证据</h2><p class="muted">绿色表示接受/拒答决策符合可回答性标签，不能据此认为完整回答正确。橙色显示误拒或误接收。检索出的片段即使带引用，也可能没有回答问题。</p>{"".join(details)}</section>
 <section><h2>03 / 可复现记录</h2><p class="muted">Python {escape(result["versions"]["python"])} · NumPy {escape(result["versions"]["numpy"])} · scikit-learn {escape(result["versions"]["sklearn"])}</p><p class="muted">Corpus SHA256: <code>{result["corpus_sha256"]}</code><br>Queries SHA256: <code>{result["queries_sha256"]}</code></p><p>复现：<code>python -m evidence_rag evaluate --output outputs</code>。完整逐题排序、分数与混淆矩阵见同目录 <code>metrics.json</code>。</p></section>
-<footer>EVIDENCE RAG / Original portfolio experiment · {escape(result["created_utc"])} · No external resources loaded.</footer>
+<footer>EVIDENCE RAG / Sparse retrieval evaluation · {escape(result["created_utc"])} · No external resources loaded.</footer>
 </main></body></html>'''
     (output / "report.html").write_text(report, encoding="utf-8")
